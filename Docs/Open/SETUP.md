@@ -1,6 +1,6 @@
 # Setup
 
-Clipy iOS는 Tuist와 mise로 project를 맞춥니다.
+Clipy iOS는 Tuist와 mise로 project 환경을 맞춥니다.
 
 ## 준비
 
@@ -26,7 +26,9 @@ project 생성과 AppMain test build를 한 번에 확인할 때는 아래 scrip
 ./scripts/validate_ios_baseline.sh
 ```
 
-script는 기본으로 simulator를 띄우지 않는 `build-for-testing`을 실행합니다. PR CI에서는 이 빠른 기준선을 사용합니다.
+script는 기본으로 simulator를 띄우지 않는 `build-for-testing`을 실행합니다.
+PR CI에서는 이 빠른 기준선을 사용합니다.
+
 실제로 test를 실행해야 할 때는 `CLIPY_IOS_VALIDATION_MODE=test`를 지정합니다.
 
 ```sh
@@ -48,7 +50,10 @@ xcodebuild test \
 ## CI
 
 GitHub Actions에서는 `iOS Baseline` workflow가 같은 baseline script를 실행합니다.
-CI도 Tuist manifest를 기준으로 project를 생성하고 `AppMain` test bundle이 build 가능한지 확인합니다. simulator를 띄우는 full test는 필요한 PR에서 `CLIPY_IOS_VALIDATION_MODE=test`로 별도 확인합니다.
+CI도 Tuist manifest를 기준으로 project를 생성합니다.
+그 다음 `AppMain` test bundle이 build 가능한지 확인합니다.
+
+simulator를 띄우는 full test는 필요한 PR에서 `CLIPY_IOS_VALIDATION_MODE=test`로 별도 확인합니다.
 
 ## Generated files
 

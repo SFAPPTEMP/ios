@@ -11,6 +11,7 @@ public enum ClipyModuleFactory {
     public static func makeApp(
         name: String,
         bundleIdSuffix: String,
+        dependencies: [TargetDependency] = [],
         hasTests: Bool = true
     ) -> Project {
         var targets: [Target] = [
@@ -22,7 +23,7 @@ public enum ClipyModuleFactory {
                 deploymentTargets: ClipyProjectConfig.deploymentTargets,
                 infoPlist: .extendingDefault(with: ClipyProjectConfig.baseInfoPlist),
                 sources: ["\(ClipyProjectConfig.sourcesDirectory)/**"],
-                dependencies: []
+                dependencies: dependencies
             )
         ]
 

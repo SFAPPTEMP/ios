@@ -10,5 +10,8 @@ import ProjectDescriptionHelpers
 
 let project = ClipyModuleFactory.makeApp(
     name: "AppMain",
-    bundleIdSuffix: "app"
+    bundleIdSuffix: "app",
+    dependencies: [
+        .project(target: "CorePersistence", path: .relativeToRoot("Modules/CorePersistence"))
+    ]
 )

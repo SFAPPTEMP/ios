@@ -1,8 +1,12 @@
 # 테스트 철학
 
 테스트는 구현을 돕는 도구이면서, 나중에 제품 규칙을 읽는 문서이기도 합니다.
+Clipy의 테스트는 coverage 숫자를 맞추기 위한 장치가 아닙니다.
+Session, Decision, 저장/복원처럼 앱의 핵심 규칙을 안전하게 바꾸기 위한 장치입니다.
+
 작업 중에는 TDD를 적극적으로 씁니다.
-다만 마지막에는 오래 남길 테스트만 정리해서 둡니다.
+마지막에는 오래 남길 테스트만 정리해서 둡니다.
+테스트 코드도 유지보수 비용이 있는 코드이기 때문입니다.
 
 ## 기본 생각
 
@@ -10,6 +14,42 @@
 - 테스트 이름과 구조만 봐도 앱의 규칙이 보여야 합니다.
 - 구현 detail에 묶인 테스트는 오래 가지 못합니다.
 - 제품 이해에 도움이 안 되는 테스트는 통과하더라도 비용입니다.
+- coverage는 낮으면 위험 신호지만, 높다고 좋은 테스트 suite를 보장하지는 않습니다.
+- 좋은 테스트 suite는 개발 흐름 안에서 자주 돌릴 수 있어야 합니다.
+
+## 좋은 테스트의 기준
+
+Clipy에서는 테스트를 남길 때 아래 네 가지를 함께 봅니다.
+
+| 기준 | Clipy iOS에서의 의미 |
+| --- | --- |
+| Regression 방지 | 실제 제품 규칙이 깨졌을 때 실패합니다. |
+| Refactoring 저항성 | 내부 구조를 바꿔도 같은 동작이면 깨지지 않습니다. |
+| 빠른 feedback | 작업 중 자주 돌릴 수 있을 만큼 빠릅니다. |
+| 유지보수성 | fixture, mock, assertion이 테스트 의도를 가리지 않습니다. |
+
+네 가지를 모두 최대로 만족하는 테스트는 거의 없습니다.
+그래도 refactoring 저항성은 쉽게 포기하지 않습니다.
+false alarm이 반복되면 테스트 suite를 믿지 않게 되고, 결국 실패를 무시하게 됩니다.
+
+그래서 Clipy의 테스트는 내부 호출 순서보다 결과를 봅니다.
+ViewModel helper 분리만으로 깨지는 테스트는 좋은 테스트가 아닙니다.
+UIKit binding 방식 변경이나 repository 구현 교체에도 쉽게 깨지면 구현 detail에 묶였는지 봅니다.
+
+## Unit test의 단위
+
+Unit test의 단위는 class 하나가 아니라 behavior 하나입니다.
+여러 객체가 함께 동작해도 괜찮습니다.
+하나의 제품 규칙을 빠르고 독립적으로 검증한다면 unit test로 봅니다.
+
+예를 들어 아래 테스트는 class 단위가 아니라 behavior 단위입니다.
+
+- 새 Session을 시작하면 draft session이 만들어집니다.
+- pending session으로 재진입하면 WebView와 Bottom Sheet 상태가 함께 복원됩니다.
+- 여러 item 중 사용자가 고른 item만 decided 상태가 됩니다.
+
+method 하나만 호출해도 제품 규칙을 설명하지 못할 수 있습니다.
+private helper 분기나 collaborator 호출 순서만 확인한다면 구현 detail에 가깝습니다.
 
 ## 오래 남길 테스트
 
@@ -18,39 +58,169 @@ Clipy에서는 아래 테스트를 우선 남깁니다.
 1. Session 상태 전이
 2. Item / Decision 정책
 3. 저장 / 복원 / 재진입 규칙
+4. error / fallback 규칙
+5. 외부 boundary로 나가는 중요한 contract
 
-이 셋은 앱의 핵심 흐름입니다.
-coverage 숫자를 올리기 위한 테스트보다, 이 규칙을 잘 설명하는 테스트가 더 중요합니다.
+이 흐름은 앱의 핵심입니다.
+coverage 숫자를 올리기 위한 테스트보다, 이 규칙을 설명하는 테스트가 더 중요합니다.
 
 ## Layer별 감각
-
-모든 layer를 같은 강도로 테스트하지 않습니다.
 
 | Layer | 주로 남길 것 | 줄일 것 |
 | --- | --- | --- |
 | Domain / State Machine | 상태 전이, Decision 정책, invariant | 단순 mapping |
 | Persistence | schema, migration, restore, failure fallback | 단순 CRUD 반복 |
-| ViewModel / Feature Logic | 사용자 action 뒤 상태 변화 | UIKit render detail |
-| UIKit View / ViewController | 핵심 진입 흐름 | layout detail unit test |
+| ViewModel / Feature Logic | 사용자 action 뒤 상태 변화 | 내부 helper 호출 순서 |
+| UIKit View / ViewController | 핵심 진입 흐름, 화면 조립 smoke | layout detail unit test |
+| External Boundary | API request contract, analytics event, system adapter 호출 | third-party type 직접 mock |
 
 UIKit View와 ViewController를 unit test로 과하게 묶지 않습니다.
 화면 확인은 상황에 따라 manual check, snapshot, UI test 중 가벼운 방법을 고릅니다.
 
-## 남길 테스트
+복잡한 로직이 UIKit, persistence, network와 한곳에 섞이면 테스트가 비싸집니다.
+이때는 mock을 늘리기보다 제품 규칙을 먼저 분리합니다.
 
-- 상태 전이 규칙
-- 저장/복원/재진입 규칙
-- error/fallback 규칙
-- 기능 완료 기준을 직접 증명하는 테스트
-- 깨지면 제품 의미가 바뀌는 테스트
+## iOS 화면 코드 테스트 기준
 
-## 지울 테스트
+UIKit 화면 코드는 가능한 한 얇게 둡니다.
+ViewController는 navigation, binding, rendering에 집중합니다.
+비교, 결정, 복원 같은 규칙은 Domain, State Machine, ViewModel 쪽으로 옮깁니다.
 
-- 구현 중 임시로 만든 scaffolding 테스트
-- getter/setter나 초기값만 보는 테스트
-- private helper 구현 모양에 묶인 테스트
-- 같은 규칙을 이름만 바꿔 반복하는 테스트
-- fixture가 너무 길어서 의도가 안 보이는 테스트
+좋은 방향은 ViewController가 직접 판단하지 않는 구조입니다.
+ViewController는 ViewModel state를 렌더링합니다.
+WebView, Bottom Sheet, navigation은 직접 unit test하기보다 그 상태를 결정하는 policy를 테스트합니다.
+
+아래 방향은 피합니다.
+
+- button tap 뒤 private method가 호출됐는지 확인합니다.
+- layout constraint 값을 unit test에서 촘촘히 검증합니다.
+- ViewController 내부 collaborator를 모두 mock으로 바꿔 호출 순서를 검증합니다.
+
+## 테스트 스타일 우선순위
+
+가능하면 아래 순서로 테스트합니다.
+
+1. Output-based test
+2. State-based test
+3. Communication-based test
+
+Output-based test는 입력과 출력만 봅니다.
+Domain policy나 formatter처럼 순수한 코드에 가장 잘 맞습니다.
+
+State-based test는 action 뒤 상태 변화를 봅니다.
+ViewModel과 feature logic에 현실적으로 많이 씁니다.
+
+Communication-based test는 dependency 호출 여부를 봅니다.
+이 방식은 외부 boundary에서만 제한적으로 씁니다.
+내부 객체끼리의 호출 순서를 검증하기 시작하면 refactoring에 약해집니다.
+
+## Mock, Stub, Spy
+
+Test double은 의도를 가리지 않을 때만 씁니다.
+mock을 많이 쓰는 테스트는 보통 구현 detail에 가까워집니다.
+
+Clipy에서는 아래처럼 구분합니다.
+
+| Test double | 쓰는 곳 | 주의할 점 |
+| --- | --- | --- |
+| Stub | 테스트 입력을 고정할 때 | stub이 호출됐는지는 검증하지 않습니다. |
+| Spy | 외부 boundary로 나간 결과를 기록할 때 | analytics, network adapter, external URL에 적합합니다. |
+| Mock | 외부 contract를 검증할 때 | 내부 domain 객체끼리는 되도록 쓰지 않습니다. |
+
+Mock은 system edge에서 가장 가치가 큽니다.
+analytics event, remote API request, external URL open처럼 앱 밖으로 나가는 contract를 검증할 때 씁니다.
+
+third-party type은 직접 mock하지 않습니다.
+우리가 소유한 protocol이나 adapter를 두고 그 경계를 검증합니다.
+
+호출 횟수가 제품 contract라면 검증할 수 있습니다.
+그렇지 않다면 결과 state나 외부 contract를 보는 쪽이 낫습니다.
+
+피할 방향입니다.
+
+```swift
+XCTAssertTrue(repository.saveCalled)
+XCTAssertTrue(viewModel.didCallPrivateUpdateState)
+```
+
+## Persistence와 integration test
+
+저장소는 앱이 소유하는 managed dependency와 앱 밖의 unmanaged dependency를 나눠 봅니다.
+
+| 구분 | 예 | 테스트 방향 |
+| --- | --- | --- |
+| Managed dependency | local database, file store, app-owned cache | 실제 구현에 가까운 integration test를 둡니다. |
+| Unmanaged dependency | remote API, analytics backend, system service | owned adapter를 stub/spy/mock으로 대체합니다. |
+
+Persistence test는 단순 CRUD를 반복하기보다 제품 규칙을 검증합니다.
+
+Clipy에서 우선순위가 높은 persistence test입니다.
+
+- pending session 저장 후 재진입
+- decision 결과 저장 후 복원
+- migration 뒤 핵심 흐름 유지
+- 손상된 cache나 누락된 데이터의 fallback
+
+Repository 자체가 단순 wrapper라면 직접 unit test 우선순위는 낮습니다.
+복잡한 mapping이나 복원 규칙은 pure mapper, policy, factory로 뺍니다.
+그 규칙은 unit test로 검증합니다.
+Repository는 대표 저장/복원 integration 흐름에서 검증합니다.
+
+## Time, UUID, randomness
+
+시간, UUID, random 값은 테스트를 불안정하게 만들기 쉽습니다.
+Domain 내부에서 `Date()`, `UUID()`, random 값을 직접 만들지 않습니다.
+
+가능하면 operation 시작 지점에서 값을 만들고, 내부에는 plain value로 전달합니다.
+service injection이 필요하면 앱 boundary에서만 사용합니다.
+
+좋은 방향입니다.
+
+```swift
+let now = Date(timeIntervalSince1970: 1_800_000_000)
+let session = Session.start(now: now)
+```
+
+피할 방향입니다.
+
+```swift
+let session = Session.start()
+XCTAssertEqual(session.createdAt, Date())
+```
+
+Session 생성일, decision timestamp, expiry 규칙은 고정된 값으로 테스트합니다.
+
+## 테스트 구조
+
+XCTest는 Arrange / Act / Assert 흐름으로 씁니다.
+주석을 꼭 붙일 필요는 없지만, 구조는 눈에 보여야 합니다.
+
+```swift
+let session = Session.draft(items: [.validItem])
+let sut = DecisionPolicy()
+
+let result = sut.decide(itemID: .validItem, in: session)
+
+XCTAssertEqual(result.decidedItems, [.validItem])
+```
+
+Unit test에서 Act가 여러 줄이면 먼저 API를 의심합니다.
+항상 함께 호출해야 하는 단계가 밖으로 새어 있으면 invariant가 깨질 수 있습니다.
+
+피할 방향입니다.
+
+```swift
+sut.prepare()
+sut.validate()
+sut.commit()
+```
+
+이 세 단계가 항상 함께 실행되어야 한다면 production API를 의심합니다.
+하나의 business operation으로 묶는 편이 나을 수 있습니다.
+
+테스트 안의 `if`도 피합니다.
+분기가 필요하면 보통 시나리오가 두 개입니다.
+테스트를 나누는 쪽이 읽기 쉽습니다.
 
 ## 테스트 이름
 
@@ -67,7 +237,7 @@ func test_<givenOrTrigger>_<expectedOutcome>_<businessMeaning>()
 상황, 행동, 기대 결과처럼 의미가 바뀌는 지점에만 넣습니다.
 각 덩어리 안은 lowerCamelCase로 씁니다.
 
-좋은 예입니다:
+좋은 예입니다.
 
 ```swift
 func test_startingNewSession_createsDraftSession_readyForBrowsing()
@@ -77,7 +247,7 @@ func test_invalidSourceUrl_disablesStartButton()
 func test_pendingSession_restoresBrowsingState()
 ```
 
-피할 예입니다:
+피할 예입니다.
 
 ```swift
 func testInit()
@@ -90,18 +260,18 @@ func testStartingNewSessionCreatesDraftSessionReadyForBrowsing()
 이름이 너무 길어지면 테스트가 너무 많은 걸 검증하는지 먼저 봅니다.
 `_`를 더 넣기보다 테스트를 나누는 쪽이 낫습니다.
 
-## Fixture와 Mock
+## Fixture와 helper
 
-Fixture와 mock은 테스트 의도를 가리면 안 됩니다.
+Fixture와 helper는 테스트 의도를 가리면 안 됩니다.
 setup이 길어지면 규칙이 묻힙니다.
 
-좋은 방향입니다:
+좋은 방향입니다.
 
 ```swift
 let session = Session.draft(items: [.validItem])
 ```
 
-피할 방향입니다:
+피할 방향입니다.
 
 ```swift
 let session = Session(
@@ -116,20 +286,45 @@ let session = Session(
 ```
 
 `TestSupport`나 fixture factory는 필요해질 때 만듭니다.
-다만 helper 이름도 제품 언어로 읽혀야 합니다.
+helper 이름도 제품 언어로 읽혀야 합니다.
+
+공통 `setUp()`에 많은 상태를 숨기지 않습니다.
+테스트마다 중요한 arrange가 바로 보이는 편이 낫습니다.
+
+Parameterized 또는 table-driven test는 중복을 줄일 때 도움이 됩니다.
+실패 메시지와 테스트 이름이 흐려지면 분리된 테스트가 낫습니다.
+제품 규칙이 다른 case라면 반복 제거보다 읽기 쉬운 테스트를 우선합니다.
 
 ## 주석
 
 주석은 “왜 이 규칙이 중요한지”를 설명할 때만 남깁니다.
 코드가 그대로 말하는 setup 설명은 적지 않습니다.
 
-남길 만한 주석입니다:
+남길 만한 주석입니다.
 
 ```swift
 // Pending session은 사용자가 비교를 중단한 상태입니다.
 // 그래서 재진입 시 WebView와 Bottom Sheet 상태를 함께 복원해야 합니다.
 func test_restoringPendingSession_keepsWebViewAndBottomSheetState()
 ```
+
+## 피해야 할 테스트
+
+아래 테스트는 지우거나 더 의미 있는 테스트로 바꿉니다.
+
+- 구현 중 임시로 만든 scaffolding 테스트
+- getter/setter나 초기값만 보는 테스트
+- private helper 구현 모양에 묶인 테스트
+- private method를 테스트하기 위해 access level을 올리는 테스트
+- 테스트만을 위해 production API나 state를 노출하는 코드
+- 같은 규칙을 이름만 바꿔 반복하는 테스트
+- fixture가 너무 길어서 의도가 안 보이는 테스트
+- stub 호출 여부를 검증하는 테스트
+- production constant를 그대로 가져와 비교하는 tautology test
+- UIKit layout detail에 과하게 묶인 unit test
+
+Private method가 너무 복잡해서 직접 테스트하고 싶다면 숨은 abstraction이 있다는 신호일 수 있습니다.
+access level을 올리기보다 `Policy`, `Mapper`, `StateMachine` 같은 타입으로 분리할지 봅니다.
 
 ## 작업 중 흐름
 
@@ -145,6 +340,13 @@ func test_restoringPendingSession_keepsWebViewAndBottomSheetState()
 
 > 이 테스트가 없으면 다음 개발자가 제품 규칙을 오해할까요?
 
+아래 질문도 함께 봅니다.
+
+- 이 테스트가 refactoring이 아니라 제품 동작 변경에 반응하나요?
+- 실패했을 때 고쳐야 할 production behavior가 분명한가요?
+- mock setup보다 제품 규칙이 더 잘 보이나요?
+- UIKit이나 persistence 구현 detail이 아니라 사용자 관점의 결과를 검증하나요?
+
 ## 마무리 체크
 
 - [ ] 남은 테스트가 현재 작업의 핵심 규칙을 설명합니다.
@@ -153,4 +355,7 @@ func test_restoringPendingSession_keepsWebViewAndBottomSheetState()
 - [ ] 구현 detail에 묶인 임시 테스트를 정리했습니다.
 - [ ] 같은 규칙을 중복 검증하지 않습니다.
 - [ ] fixture와 mock이 테스트 의도를 가리지 않습니다.
+- [ ] mock은 system edge 중심으로만 남겼습니다.
+- [ ] 시간, UUID, random 값은 고정하거나 명시적으로 주입했습니다.
+- [ ] UIKit 화면 코드는 unit test보다 더 가벼운 확인 방법이 맞는지 봤습니다.
 - [ ] 주석은 제품 이유를 설명할 때만 남겼습니다.

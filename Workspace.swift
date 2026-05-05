@@ -10,6 +10,7 @@ import ProjectDescription
 let workspace = Workspace(
     name: "Clipy",
     projects: [
-        "Modules/AppMain"
+        "Modules/AppMain",
+        "Modules/CoreDomain"
     ]
 )

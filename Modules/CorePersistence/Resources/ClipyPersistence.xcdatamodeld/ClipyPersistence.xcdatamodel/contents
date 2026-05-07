@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
+    <entity name="CaptureEntity" representedClassName="CaptureEntity" syncable="YES">
+        <attribute name="capturedAt" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="id" attributeType="String"/>
+        <attribute name="imageLocalPath" optional="YES" attributeType="String"/>
+        <attribute name="imageRemoteUrl" attributeType="String"/>
+        <attribute name="itemId" attributeType="String"/>
+        <attribute name="memo" optional="YES" attributeType="String"/>
+        <fetchIndex name="byItemIdIndex">
+            <fetchIndexElement property="itemId" type="Binary" order="ascending"/>
+        </fetchIndex>
+    </entity>
+    <entity name="DecisionEntity" representedClassName="DecisionEntity" syncable="YES">
+        <attribute name="decidedAt" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="id" attributeType="String"/>
+        <attribute name="itemId" attributeType="String"/>
+        <attribute name="sessionId" attributeType="String"/>
+        <fetchIndex name="bySessionIdIndex">
+            <fetchIndexElement property="sessionId" type="Binary" order="ascending"/>
+        </fetchIndex>
+    </entity>
+    <entity name="ItemEntity" representedClassName="ItemEntity" syncable="YES">
+        <attribute name="createdAt" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="id" attributeType="String"/>
+        <attribute name="intentState" attributeType="String"/>
+        <attribute name="note" optional="YES" attributeType="String"/>
+        <attribute name="priceAmount" optional="YES" attributeType="String"/>
+        <attribute name="priceCurrency" optional="YES" attributeType="String"/>
+        <attribute name="priceRawText" optional="YES" attributeType="String"/>
+        <attribute name="productName" optional="YES" attributeType="String"/>
+        <attribute name="sessionId" attributeType="String"/>
+        <attribute name="sourceUrl" attributeType="String"/>
+        <attribute name="thumbnailLocalPath" optional="YES" attributeType="String"/>
+        <attribute name="thumbnailRemoteUrl" optional="YES" attributeType="String"/>
+        <attribute name="updatedAt" attributeType="Date" usesScalarValueType="NO"/>
+        <fetchIndex name="bySessionIdIndex">
+            <fetchIndexElement property="sessionId" type="Binary" order="ascending"/>
+        </fetchIndex>
+    </entity>
+    <entity name="SessionEntity" representedClassName="SessionEntity" syncable="YES">
+        <attribute name="abandonedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="closedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="createdAt" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="id" attributeType="String"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <attribute name="status" attributeType="String"/>
+        <attribute name="updatedAt" attributeType="Date" usesScalarValueType="NO"/>
+        <fetchIndex name="byIdIndex">
+            <fetchIndexElement property="id" type="Binary" order="ascending"/>
+        </fetchIndex>
+    </entity>
+    <entity name="SessionViewStateEntity" representedClassName="SessionViewStateEntity" syncable="YES">
+        <attribute name="bottomSheetState" attributeType="String"/>
+        <attribute name="lastOpenedAt" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="lastWebUrl" optional="YES" attributeType="String"/>
+        <attribute name="sessionId" attributeType="String"/>
+        <fetchIndex name="bySessionIdIndex">
+            <fetchIndexElement property="sessionId" type="Binary" order="ascending"/>
+        </fetchIndex>
+    </entity>
+</model>

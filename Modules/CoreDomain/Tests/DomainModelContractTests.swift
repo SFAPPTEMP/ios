@@ -1,11 +1,12 @@
 //
-//  DomainModelBaselineTests.swift
+//  DomainModelContractTests.swift
 //  Clipy
 //
 //  Created by 박민서 on 5/5/26.
 //
 
 import XCTest
+
 import CoreDomain
 
 // 이 suite는 다른 모듈들이 함께 쓰는 public domain contract를 고정합니다.

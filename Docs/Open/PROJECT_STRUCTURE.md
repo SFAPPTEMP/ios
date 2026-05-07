@@ -20,6 +20,11 @@ Clipy-iOS/
       Project.swift
       Sources/
       Tests/
+    CorePersistence/
+      Project.swift
+      Resources/
+      Sources/
+      Tests/
 ```
 
 ## 현재 module
@@ -27,7 +32,8 @@ Clipy-iOS/
 | Module | 책임 |
 | --- | --- |
 | `AppMain` | app entry point, scene lifecycle, app 조립 |
-| `CoreDomain` | Session, Item, Decision, Capture와 상태 전이 규칙 |
+| `CoreDomain` | Session, Item, Decision, Capture, SessionSnapshot와 repository contract |
+| `CorePersistence` | CoreData 기반 local 저장 구조, entity mapping, repository 구현 |
 
 module이 늘어나도 기본 구조는 같습니다.
 각 module은 자기 `Project.swift`, `Sources/`, `Tests/`를 가집니다.
@@ -48,7 +54,17 @@ Module은 화면 수가 아니라 책임 경계를 기준으로 늘립니다.
 
 ## 의존 방향
 
-기본 의존 방향은 아래처럼 둡니다.
+현재 module 의존은 아래처럼 둡니다.
+
+```plaintext
+AppMain -> CorePersistence -> CoreDomain
+```
+
+`AppMain`은 app entry point와 composition root를 맡습니다.
+`CorePersistence`는 `CoreDomain`의 repository contract를 CoreData로 구현합니다.
+`CoreDomain`은 저장소 구현, WebView, UIKit detail을 모릅니다.
+
+Feature module이 생기면 기본 의존 방향은 아래처럼 둡니다.
 
 ```plaintext
 AppMain -> Feature -> Core
@@ -56,10 +72,6 @@ AppMain -> Core
 Feature -x-> Feature
 Core -x-> Feature
 ```
-
-`AppMain`은 app의 composition root입니다.
-Feature module은 `AppMain`을 알지 않습니다.
-Core module도 `AppMain`이나 Feature를 알지 않습니다.
 
 Feature끼리는 직접 의존하지 않습니다.
 공유해야 하는 규칙이나 타입이 생기면 먼저 Core 책임인지 봅니다.
@@ -104,7 +116,10 @@ Feature UI
             -> Local DB / Web / Cache
 ```
 
-`CoreDomain`은 entity, value object, 상태 전이 규칙, use case, repository protocol을 둡니다.
+현재 `CoreDomain`은 entity, value object, `SessionViewState`, `SessionSnapshot`, repository protocol 같은 제품 상태 계약을 둡니다.
+상태 전이 규칙과 use case는 해당 Feature 작업에서 실제 필요가 생길 때 추가합니다.
+
+`CorePersistence`는 CoreData schema, entity mapping, `SessionRepository` 구현을 맡습니다.
 Persistence, WebView, cache 같은 platform detail은 Domain 안으로 들어오지 않습니다.
 
 Feature는 UIKit 화면, ViewController, ViewModel, 화면 action 처리를 맡습니다.
@@ -121,7 +136,6 @@ Home은 세션 진입과 관리에 집중합니다.
 
 | 책임 | 예시 module |
 | --- | --- |
-| local 저장소와 record mapping | `CorePersistence` |
 | WebView, URL validation, web primitive | `CoreWeb` |
 | 공용 UIKit style/component | `CoreUI` |
 | Home, session list, start/reopen entry flow | `FeatureHome` |
